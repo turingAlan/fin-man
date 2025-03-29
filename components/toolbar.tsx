@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect, useRef } from "react";
 
 interface ToolbarProps {
   searchQuery: string;
@@ -31,6 +32,44 @@ export function Toolbar({
   onFilterChange,
   projectTypes,
 }: ToolbarProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === "Enter" &&
+        inputRef.current &&
+        inputRef.current === document.activeElement
+      ) {
+        event.preventDefault();
+        onSearchChange(searchQuery);
+      } else if (
+        event.key === "Escape" &&
+        inputRef.current &&
+        inputRef.current === document.activeElement
+      ) {
+        if (inputRef.current) {
+          inputRef.current.blur();
+        }
+      } else if (
+        event.key === "/" &&
+        inputRef.current &&
+        inputRef.current !== document.activeElement
+      ) {
+        event.preventDefault();
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <div className="h-12 border-b border-gray-200 flex items-center px-4 justify-between">
       <div className="relative flex-1">
@@ -39,8 +78,9 @@ export function Toolbar({
           size={16}
         />
         <Input
+          ref={inputRef}
           className="pl-8 h-8 text-sm bg-gray-100 border-gray-200"
-          placeholder="Search projects..."
+          placeholder="Press / to focus and Search projects..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
