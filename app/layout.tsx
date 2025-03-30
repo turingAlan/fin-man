@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { registerLicense } from "@syncfusion/ej2-base";
 
 export const metadata: Metadata = {
   title: "Fin Chat",
@@ -13,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <main>{children}</main>
+        <Toaster richColors />
+      </body>
     </html>
   );
 }

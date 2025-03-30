@@ -6,6 +6,11 @@ import { FileManagerLayout } from "@/components/file-manager-layout";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, FolderIcon } from "lucide-react";
 import type { Project } from "@/types";
+import { FileUploader } from "@/components/file-uploader";
+import SheetVisualizer from "@/components/sheet-visualizer";
+import { registerLicense } from "@syncfusion/ej2-base";
+
+registerLicense(process.env.NEXT_PUBLIC_EJ2_LICENSE_KEY || "");
 
 export default function ProjectPage({
   params,
@@ -16,11 +21,11 @@ export default function ProjectPage({
   const pramasData = use(params);
 
   const [project, setProject] = useState<Project | null>(null);
+  const [filesUploaded, setFilesUploaded] = useState(false);
 
   // In a real app, you would fetch the project data from an API or state management
   useEffect(() => {
     // Simulate fetching project data
-    // In a real app, this would be a fetch call or state management
     const storedProjects = localStorage.getItem("projects");
     if (storedProjects) {
       const projects: Project[] = JSON.parse(storedProjects);
@@ -73,32 +78,32 @@ export default function ProjectPage({
         </div>
       </div>
 
-      {/* Project content */}
-      <div className="flex-1 p-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-medium mb-4">Project Details</h2>
-          <p className="text-gray-600 mb-6">
-            This is the detail page for your project. You can add content,
-            files, and other information here.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-medium mb-2">Files</h3>
-              <p className="text-sm text-gray-500">
-                No files yet. Add files to your project.
-              </p>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-medium mb-2">Notes</h3>
-              <p className="text-sm text-gray-500">
-                No notes yet. Add notes to your project.
-              </p>
-            </div>
+      {/* Conditionally render SheetVisualizer */}
+      {filesUploaded ? (
+        <div className="flex-1 p-6">
+          <SheetVisualizer />
+        </div>
+      ) : (
+        <div className="flex-1 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-lg font-medium mb-4">Project Details</h2>
+            <p className="text-gray-600 mb-6">
+              No files yet. Add files to your project.
+            </p>
+            <FileUploader
+              maxFileCount={4}
+              maxSize={4 * 1024 * 1024}
+              progresses={{}}
+              onUpload={async (files: File[]) => {
+                if (files.length > 0) {
+                  setFilesUploaded(true); // Set state to true when files are uploaded
+                }
+              }}
+              disabled={false}
+            />
           </div>
         </div>
-      </div>
+      )}
     </FileManagerLayout>
   );
 }
