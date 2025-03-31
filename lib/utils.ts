@@ -22,3 +22,15 @@ export function formatBytes(
     sizeType === "accurate" ? accurateSizes[i] ?? "Bytes" : sizes[i] ?? "Bytes"
   }`;
 }
+
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const half = Math.floor(maxLength / 2);
+  const start = text.slice(0, half);
+  const end = text.slice(-half);
+
+  return `${start}...${end}`;
+}

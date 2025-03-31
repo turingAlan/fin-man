@@ -17,9 +17,7 @@ interface ToolbarProps {
   onCreateProject: () => void;
   sortBy: string;
   onSortChange: (sort: string) => void;
-  filterType: string | null;
   onFilterChange: (type: string | null) => void;
-  projectTypes: string[];
 }
 
 export function Toolbar({
@@ -28,9 +26,7 @@ export function Toolbar({
   onCreateProject,
   sortBy,
   onSortChange,
-  filterType,
   onFilterChange,
-  projectTypes,
 }: ToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -101,25 +97,6 @@ export function Toolbar({
             <DropdownMenuItem onClick={() => onSortChange("date")}>
               Date
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
-              Filter: {filterType || "All"}
-              <ChevronDown size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onFilterChange(null)}>
-              All
-            </DropdownMenuItem>
-            {projectTypes.map((type) => (
-              <DropdownMenuItem key={type} onClick={() => onFilterChange(type)}>
-                {type}
-              </DropdownMenuItem>
-            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 

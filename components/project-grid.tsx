@@ -33,13 +33,10 @@ export function ProjectGrid({ projects, onDelete }: ProjectGridProps) {
             className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden group cursor-pointer"
           >
             <div
-              className={`h-24 flex items-center justify-center bg-${project.type.color}-100`}
+              className={`h-24 flex items-center justify-center bg-${project.color}-100`}
               onClick={() => handleProjectClick(project.id)}
             >
-              <FolderIcon
-                size={48}
-                className={`text-${project.type.color}-500`}
-              />
+              <FolderIcon size={48} className={`text-${project.color}-500`} />
             </div>
             <div className="p-3">
               <div className="flex items-start justify-between">
@@ -47,7 +44,6 @@ export function ProjectGrid({ projects, onDelete }: ProjectGridProps) {
                   <h3 className="font-medium text-sm truncate">
                     {project.name}
                   </h3>
-                  <p className="text-xs text-gray-500">{project.type.name}</p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

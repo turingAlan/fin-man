@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import { projectTypes } from "./constants/projects";
+import { availableColors } from "./constants/projects";
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -93,11 +93,11 @@ const config: Config = {
   },
   plugins: [require("tailwindcss-animate")],
   safelist: [
-    ...projectTypes.map((type) => {
-      return `bg-${type.color}-100`;
+    ...availableColors.map((color) => {
+      return `bg-${color}-100`;
     }),
-    ...projectTypes.map((type) => {
-      return `text-${type.color}-500`;
+    ...availableColors.map((color) => {
+      return `text-${color}-500`;
     }),
   ],
 };

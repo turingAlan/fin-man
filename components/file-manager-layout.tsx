@@ -4,6 +4,7 @@ import type React from "react";
 
 import { WindowControls } from "@/components/window-controls";
 import { useParams } from "next/navigation";
+import ClickToCopy from "./ui/click-to-copy";
 
 export function FileManagerLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -12,8 +13,16 @@ export function FileManagerLayout({ children }: { children: React.ReactNode }) {
       {/* Window header */}
       <div className="h-10 bg-gray-200 border-b border-gray-300 flex items-center px-3">
         <WindowControls />
-        <div className="flex-1 text-center text-sm font-medium">
-          {params.id ? `Project #${params.id}` : "Projects"}
+        <div className="flex-1 flex justify-center items-center text-sm font-medium">
+          {params.id ? (
+            <ClickToCopy
+              textToCopy={Array.isArray(params.id) ? params.id[0] : params.id}
+            >
+              Project #{params.id}
+            </ClickToCopy>
+          ) : (
+            "Projects"
+          )}
         </div>
       </div>
 

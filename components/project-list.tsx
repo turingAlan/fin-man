@@ -30,9 +30,7 @@ export function ProjectList({ projects, onDelete }: ProjectListProps) {
             <th className="text-left py-2 px-4 text-xs font-medium text-gray-500">
               Name
             </th>
-            <th className="text-left py-2 px-4 text-xs font-medium text-gray-500">
-              Type
-            </th>
+
             <th className="text-left py-2 px-4 text-xs font-medium text-gray-500">
               Created
             </th>
@@ -50,13 +48,10 @@ export function ProjectList({ projects, onDelete }: ProjectListProps) {
                 <div className="flex items-center gap-2">
                   <FolderIcon
                     size={16}
-                    className={`text-${project.type.color}-500`}
+                    className={`text-${project.color}-500`}
                   />
                   <span className="text-sm">{project.name}</span>
                 </div>
-              </td>
-              <td className="py-2 px-4 text-sm text-gray-600">
-                {project.type.name}
               </td>
               <td className="py-2 px-4 text-sm text-gray-600">
                 {project.createdAt.toLocaleDateString()}

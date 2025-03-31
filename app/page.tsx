@@ -8,8 +8,8 @@ import { ProjectList } from "@/components/project-list";
 import { Toolbar } from "@/components/toolbar";
 import { ViewOptions } from "@/components/view-options";
 import { NewProjectModal } from "@/components/new-project-modal";
-import type { Project, ProjectType } from "@/types";
-import { defaultProjects, projectTypes } from "@/constants/projects";
+import type { Project } from "@/types";
+import { availableColors, defaultProjects } from "@/constants/projects";
 import {
   initialState,
   projectsReducer,
@@ -25,7 +25,6 @@ export default function Home() {
 
   const searchQuery = searchParams.get("searchQuery") || "";
   const sortBy = searchParams.get("sortBy") || "name";
-  const filterType = searchParams.get("filterType") || null;
 
   const setSearchParams = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -64,11 +63,12 @@ export default function Home() {
     setIsNewProjectModalOpen(true);
   };
 
-  const createProject = (name: string, type: ProjectType) => {
+  const createProject = (name: string) => {
     const newProject: Project = {
       id: Math.random().toString(36).substring(7),
       name,
-      type,
+      color:
+        availableColors[Math.floor(Math.random() * availableColors.length)],
       createdAt: new Date(),
     };
     dispatch({ type: "ADD_PROJECT", payload: newProject });
@@ -87,9 +87,6 @@ export default function Home() {
       ) {
         return false;
       }
-      if (filterType && project.type.name !== filterType) {
-        return false;
-      }
       return true;
     })
     .sort((a, b) => {
@@ -100,10 +97,6 @@ export default function Home() {
       }
     });
 
-  const addedProjectTypes = Array.from(
-    new Set(projects.map((p) => p.type.name))
-  );
-
   return (
     <FileManagerLayout>
       <Toolbar
@@ -112,9 +105,7 @@ export default function Home() {
         onCreateProject={openNewProjectModal}
         sortBy={sortBy}
         onSortChange={(value) => setSearchParams("sortBy", value)}
-        filterType={filterType}
         onFilterChange={(value) => setSearchParams("filterType", value)}
-        projectTypes={addedProjectTypes}
       />
 
       <ViewOptions view={view} onViewChange={setView} />
@@ -131,7 +122,6 @@ export default function Home() {
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
         onConfirm={createProject}
-        projectTypes={projectTypes}
       />
     </FileManagerLayout>
   );
