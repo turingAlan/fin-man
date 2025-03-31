@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect, useReducer } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FileManagerLayout } from "@/components/file-manager-layout";
 import { ProjectGrid } from "@/components/project-grid";
@@ -9,14 +6,13 @@ import { Toolbar } from "@/components/toolbar";
 import { ViewOptions } from "@/components/view-options";
 import { NewProjectModal } from "@/components/new-project-modal";
 import type { Project } from "@/types";
-import { availableColors, defaultProjects } from "@/constants/projects";
-import {
-  initialState,
-  projectsReducer,
-} from "@/store/reducers/projectsReducer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProjects } from "@/hooks/use-projects";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [projects, dispatch] = useReducer(projectsReducer, initialState);
+  const { data: fetchedProjects, isLoading } = useProjects();
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
 
@@ -44,39 +40,24 @@ export default function Home() {
     return () => clearTimeout(handler);
   }, [debouncedSearchQuery]);
 
-  // Load projects from localStorage on initial render
   useEffect(() => {
-    const storedProjects = localStorage.getItem("projects");
-    if (storedProjects) {
-      const parsedProjects = JSON.parse(storedProjects);
-      parsedProjects.forEach((project: any) => {
-        project.createdAt = new Date(project.createdAt);
-      });
-      dispatch({ type: "SET_PROJECTS", payload: parsedProjects });
-    } else {
-      dispatch({ type: "SET_PROJECTS", payload: defaultProjects });
-      localStorage.setItem("projects", JSON.stringify(defaultProjects));
+    if (fetchedProjects) {
+      setProjects(fetchedProjects);
     }
-  }, []);
+  }, [fetchedProjects]);
 
   const openNewProjectModal = () => {
     setIsNewProjectModalOpen(true);
   };
 
-  const createProject = (name: string) => {
-    const newProject: Project = {
-      id: Math.random().toString(36).substring(7),
-      name,
-      color:
-        availableColors[Math.floor(Math.random() * availableColors.length)],
-      createdAt: new Date(),
-    };
-    dispatch({ type: "ADD_PROJECT", payload: newProject });
+  const handleCreateProject = (name: string) => {
     setIsNewProjectModalOpen(false);
   };
 
   const deleteProject = (id: string) => {
-    dispatch({ type: "DELETE_PROJECT", payload: id });
+    setProjects((prevProjects) =>
+      prevProjects.filter((project) => project.id !== id)
+    );
   };
 
   const filteredProjects = projects
@@ -111,7 +92,16 @@ export default function Home() {
       <ViewOptions view={view} onViewChange={setView} />
 
       <div className="flex-1 overflow-auto p-4">
-        {view === "grid" ? (
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            ))}
+          </div>
+        ) : view === "grid" ? (
           <ProjectGrid projects={filteredProjects} onDelete={deleteProject} />
         ) : (
           <ProjectList projects={filteredProjects} onDelete={deleteProject} />
@@ -121,7 +111,7 @@ export default function Home() {
       <NewProjectModal
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
-        onConfirm={createProject}
+        onConfirm={handleCreateProject}
       />
     </FileManagerLayout>
   );

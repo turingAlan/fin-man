@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Building } from "lucide-react";
+import { Search, Building, Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -17,49 +16,97 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { cn } from "@/lib/utils";
+
+interface Company {
+  name: string;
+  ticker: string;
+  sector: string;
+}
 
 interface CompanySearchProps {
   onSelect: (company: string) => void;
 }
 
-const COMPANIES = [
-  { name: "Apple Inc.", ticker: "AAPL", sector: "Technology" },
-  { name: "Microsoft Corporation", ticker: "MSFT", sector: "Technology" },
-  { name: "Amazon.com Inc.", ticker: "AMZN", sector: "Consumer Cyclical" },
-  { name: "Alphabet Inc.", ticker: "GOOGL", sector: "Communication Services" },
-  {
-    name: "Meta Platforms Inc.",
-    ticker: "META",
-    sector: "Communication Services",
-  },
-  { name: "Tesla Inc.", ticker: "TSLA", sector: "Automotive" },
-  { name: "NVIDIA Corporation", ticker: "NVDA", sector: "Technology" },
-  { name: "JPMorgan Chase & Co.", ticker: "JPM", sector: "Financial Services" },
-  { name: "Johnson & Johnson", ticker: "JNJ", sector: "Healthcare" },
-  { name: "Visa Inc.", ticker: "V", sector: "Financial Services" },
-];
-
 export function CompanySearch({ onSelect }: CompanySearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [filteredCompanies, setFilteredCompanies] = useState(COMPANIES);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [isKeyboardNavActive, setIsKeyboardNavActive] = useState(false);
+
+  useEffect(() => {
+    fetch("/company-list.json")
+      .then((response) => response.json())
+      .then((data) => {
+        setCompanies(data);
+        setFilteredCompanies(data);
+      })
+      .catch((error) => console.error("Error fetching company list:", error));
+  }, []);
 
   useEffect(() => {
     if (search) {
-      const filtered = COMPANIES.filter(
-        (company) =>
-          company.name.toLowerCase().includes(search.toLowerCase()) ||
-          company.ticker.toLowerCase().includes(search.toLowerCase())
+      setFilteredCompanies(
+        companies.filter(
+          (company) =>
+            company.name.toLowerCase().includes(search.toLowerCase()) ||
+            company.ticker.toLowerCase().includes(search.toLowerCase())
+        )
       );
-      setFilteredCompanies(filtered);
     } else {
-      setFilteredCompanies(COMPANIES);
+      setFilteredCompanies(companies);
     }
-  }, [search]);
+  }, [search, companies]);
 
-  const handleSelect = (company: string) => {
-    onSelect(company);
-    setOpen(false);
+  const parentRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useVirtualizer({
+    count: filteredCompanies.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60, // Approximate row height
+    overscan: 100,
+  });
+
+  const virtualRows = virtualizer
+    .getVirtualItems()
+    .filter((virtualRow) => virtualRow.index < filteredCompanies.length);
+
+  const scrollToIndex = (index: number) => {
+    virtualizer.scrollToIndex(index, { align: "center" });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setIsKeyboardNavActive(true);
+        setFocusedIndex((prev) => {
+          const newIndex = Math.min(prev + 1, filteredCompanies.length - 1);
+          scrollToIndex(newIndex);
+          return newIndex;
+        });
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setIsKeyboardNavActive(true);
+        setFocusedIndex((prev) => {
+          const newIndex = Math.max(prev - 1, 0);
+          scrollToIndex(newIndex);
+          return newIndex;
+        });
+        break;
+      case "Enter":
+        event.preventDefault();
+        if (filteredCompanies[focusedIndex]) {
+          onSelect(filteredCompanies[focusedIndex].name);
+          setOpen(false);
+        }
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -70,64 +117,83 @@ export function CompanySearch({ onSelect }: CompanySearchProps) {
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              size={16}
-            />
-            <Input
-              placeholder="Search for a company..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 border-gray-200 focus-visible:ring-blue-600"
-              onClick={() => setOpen(true)}
-            />
-          </div>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="justify-between w-full"
+          >
+            {search || "Search for a company..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-[400px]" align="start">
-          <Command>
+          <Command shouldFilter={false} onKeyDown={handleKeyDown}>
             <CommandInput
               placeholder="Search companies..."
               value={search}
               onValueChange={setSearch}
             />
-            <CommandList>
+            <CommandList
+              ref={parentRef}
+              style={{ height: "400px", overflow: "auto" }}
+              onMouseDown={() => setIsKeyboardNavActive(false)}
+              onMouseMove={() => setIsKeyboardNavActive(false)}
+            >
               <CommandEmpty>No companies found.</CommandEmpty>
               <CommandGroup>
-                {filteredCompanies.map((company) => (
-                  <CommandItem
-                    key={company.ticker}
-                    onSelect={() => handleSelect(company.name)}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Building size={16} className="text-gray-500" />
-                    <div className="flex flex-col">
-                      <span>{company.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {company.ticker} • {company.sector}
-                      </span>
-                    </div>
-                  </CommandItem>
-                ))}
+                <div
+                  style={{
+                    height: `${virtualizer.getTotalSize()}px`,
+                    position: "relative",
+                  }}
+                >
+                  {virtualRows.map((virtualRow) => {
+                    const company = filteredCompanies[virtualRow.index];
+                    return (
+                      <CommandItem
+                        key={company.ticker}
+                        disabled={isKeyboardNavActive}
+                        className={cn(
+                          "absolute left-0 top-0 w-full",
+                          focusedIndex === virtualRow.index &&
+                            "bg-accent text-accent-foreground",
+                          isKeyboardNavActive &&
+                            focusedIndex !== virtualRow.index &&
+                            "aria-selected:bg-transparent aria-selected:text-primary"
+                        )}
+                        style={{
+                          height: `${virtualRow.size}px`,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                        onSelect={() => {
+                          onSelect(company.name);
+                          setOpen(false);
+                        }}
+                        onMouseEnter={() =>
+                          !isKeyboardNavActive &&
+                          setFocusedIndex(virtualRow.index)
+                        }
+                        onMouseLeave={() =>
+                          !isKeyboardNavActive && setFocusedIndex(-1)
+                        }
+                      >
+                        <Building size={16} className="text-gray-500" />
+                        <div className="flex flex-col">
+                          <span>{company.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {company.ticker} • {company.sector}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
+                </div>
               </CommandGroup>
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
-
-      <div className="flex justify-end">
-        <Button
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={!search}
-          onClick={() => {
-            if (filteredCompanies.length > 0) {
-              handleSelect(filteredCompanies[0].name);
-            }
-          }}
-        >
-          Continue
-        </Button>
-      </div>
     </div>
   );
 }
