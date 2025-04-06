@@ -17,20 +17,22 @@ import { Label } from "@/components/ui/label";
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (name: string) => void;
+  onConfirm: (args: { name: string }) => void;
+  isLoading?: boolean;
 }
 
 export function NewProjectModal({
   isOpen,
   onClose,
   onConfirm,
+  isLoading = false,
 }: NewProjectModalProps) {
   const [name, setName] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onConfirm(name);
+      onConfirm({ name });
       setName("");
     }
   };
@@ -58,7 +60,16 @@ export function NewProjectModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Create Project</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                  Loading...
+                </span>
+              ) : (
+                "Create Project"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

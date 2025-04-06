@@ -5,12 +5,17 @@ import { useState, useEffect, use } from "react";
 import { FileManagerLayout } from "@/components/file-manager-layout";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, FolderIcon, Building, BuildingIcon } from "lucide-react";
-import type { Project } from "@/types";
+import type { ProjectDetails } from "@/types";
 import { CompanySearch } from "@/components/company-search";
 import { FileUpload } from "@/components/file-upload";
 import { ProjectAnalysis } from "@/components/project-analysis";
-import { truncateText } from "@/lib/utils";
-
+import { ProjectManagerLayout } from "@/components/project-manager-layout";
+import {
+  useProjectDetails,
+  useUploadProjectDocuments,
+} from "@/hooks/use-projects";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCreateProjection } from "@/hooks/use-projections";
 export default function ProjectPage({
   params,
 }: {
@@ -19,25 +24,36 @@ export default function ProjectPage({
   const paramsData = use(params);
 
   const router = useRouter();
-  const [project, setProject] = useState<Project | null>(null);
+
+  const { data: projectData, isLoading: isLoading } = useProjectDetails(
+    paramsData.id
+  );
+
+  const {
+    mutate: handleUploadProjectFiles,
+    isPending: isUploadingProjectFiles,
+    data: uploadProjectFilesData,
+  } = useUploadProjectDocuments();
+
+  const { mutate: createProject, isPending } = useCreateProjection();
+
+  const [project, setProject] = useState<ProjectDetails | undefined>(undefined);
   const [companyType, setCompanyType] = useState<"listed" | "unlisted" | null>(
     null
   );
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(
+    "unlisted"
+  );
+
+  const [fileAnalysisData, setFileAnalysisData] = useState<any>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[] | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
 
   useEffect(() => {
-    const storedProjects = localStorage.getItem("projects");
-    if (storedProjects) {
-      const projects: Project[] = JSON.parse(storedProjects);
-      const foundProject = projects.find((p) => p.id === paramsData.id);
-      if (foundProject) {
-        foundProject.createdAt = new Date(foundProject.createdAt);
-        setProject(foundProject);
-      }
+    if (projectData) {
+      setProject(projectData);
     }
-  }, [paramsData.id]);
+  }, [projectData]);
 
   const getColorClass = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -51,27 +67,44 @@ export default function ProjectPage({
     return colorMap[color] || "text-gray-500";
   };
 
-  useEffect(() => {
-    if (selectedCompany || uploadedFile) {
-      const timer = setTimeout(() => {
-        setShowRightPanel(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedCompany, uploadedFile]);
-
   const handleCompanySelect = (company: string) => {
     setSelectedCompany(company);
   };
 
-  const handleFileUpload = (file: File) => {
-    setUploadedFile(file);
+  const handleFileUpload = (file: File[]) => {
+    setUploadedFiles(file);
+    handleUploadProjectFiles({
+      ukid: paramsData.id || "",
+      documents: file,
+    });
+  };
+
+  const handleCreateProjection = (data: {
+    assumption: string;
+    years: number;
+    loanAmount: number;
+    tenure: number;
+    interest: number;
+  }) => {
+    createProject({
+      assumptions: data.assumption,
+      ukid: paramsData.id || "",
+      years: data.years,
+      financial_statements: [
+        {
+          item_type: "document",
+        },
+      ],
+      loan_amount: data.loanAmount,
+      interest_rate: data.interest,
+      tenure: data.tenure,
+    });
   };
 
   const resetSelection = () => {
     setCompanyType(null);
-    setSelectedCompany(null);
-    setUploadedFile(null);
+    // setSelectedCompany(null);
+    setUploadedFiles(null);
     setShowRightPanel(false);
   };
 
@@ -79,16 +112,31 @@ export default function ProjectPage({
     return (
       <FileManagerLayout>
         <div className="flex-1 flex items-center justify-center">
-          <p>Loading project...</p>
+          <div className="space-y-4 w-full max-w-md">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
         </div>
       </FileManagerLayout>
     );
   }
 
-  const colorClass = getColorClass(project.color);
+  const colorClass = getColorClass(
+    ["blue", "green", "purple", "orange", "pink", "cyan"][
+      Math.floor(Math.random() * 6)
+    ]
+  );
+
+  useEffect(() => {
+    if (uploadProjectFilesData) {
+      setFileAnalysisData(uploadProjectFilesData);
+      setShowRightPanel(true);
+    }
+  }, [uploadProjectFilesData]);
 
   return (
-    <FileManagerLayout>
+    <ProjectManagerLayout>
       {/* Project header */}
       <div className="border-b border-gray-200 p-4 bg-white">
         <div className="flex items-center gap-2 mb-4">
@@ -100,16 +148,16 @@ export default function ProjectPage({
           >
             <ChevronLeft size={16} />
           </Button>
-          <h1 className="text-xl font-semibold">{project.name}</h1>
+          <h1 className="text-xl font-semibold">{paramsData.id}</h1>
         </div>
-
+        {/* ask for the back to include the project details along with the project files in the api */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <FolderIcon size={20} className={colorClass} />
-            <span className="text-sm font-medium">{project.name}</span>
+            <span className="text-sm font-medium">{paramsData.id}</span>
           </div>
           <div className="text-sm text-gray-500">
-            Created on {project.createdAt.toLocaleDateString()}
+            Created on {new Date().toLocaleDateString()}
           </div>
         </div>
       </div>
@@ -175,7 +223,7 @@ export default function ProjectPage({
 
                 <CompanySearch onSelect={handleCompanySelect} />
               </div>
-            ) : companyType === "unlisted" && !uploadedFile ? (
+            ) : companyType === "unlisted" ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-md font-medium">
@@ -199,8 +247,8 @@ export default function ProjectPage({
                   <h3 className="text-md font-medium">
                     {selectedCompany
                       ? `Selected Company: ${selectedCompany}`
-                      : uploadedFile
-                      ? `Uploaded: ${truncateText(uploadedFile.name, 20)}`
+                      : uploadedFiles
+                      ? `Uploaded: files`
                       : ""}
                   </h3>
                   <Button
@@ -233,11 +281,14 @@ export default function ProjectPage({
         >
           {showRightPanel && (
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm h-full">
-              <ProjectAnalysis company={selectedCompany} file={uploadedFile} />
+              <ProjectAnalysis
+                company={selectedCompany}
+                files={uploadedFiles}
+              />
             </div>
           )}
         </div>
       </div>
-    </FileManagerLayout>
+    </ProjectManagerLayout>
   );
 }

@@ -6,10 +6,13 @@ import SheetVisualizer from "./sheet-visualizer";
 
 interface ProjectAnalysisProps {
   company: string | null;
-  file: File | null;
+  files: File[] | null;
 }
 
-export function ProjectAnalysis({ company, file }: ProjectAnalysisProps) {
+export function ProjectAnalysis({
+  company,
+  files: files,
+}: ProjectAnalysisProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,11 +39,10 @@ export function ProjectAnalysis({ company, file }: ProjectAnalysisProps) {
         <p className="text-sm text-gray-600">
           {company
             ? `Analysis for ${company}`
-            : file
-            ? `Analysis based on uploaded document: ${truncateText(
-                file.name,
-                20
-              )}`
+            : files
+            ? `Analysis based on uploaded document: ${
+                (files.map((file) => truncateText(file.name, 5)).join(", "), 20)
+              }`
             : "Analysis Results"}
         </p>
       </div>

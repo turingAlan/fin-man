@@ -1,6 +1,11 @@
 import { availableColors } from "@/constants/projects";
 import apiClient from "@/lib/axios-interceptor";
-import { ApiProjectData, ApiProjectResponse, Project } from "@/types";
+import {
+  ApiProjectData,
+  ApiProjectResponse,
+  Project,
+  ProjectDetails,
+} from "@/types";
 
 const API_BASE_URL = `/api/v0/project`;
 
@@ -30,7 +35,29 @@ export const createProject = async (project: {
   return newProject;
 };
 
-export const getProjectDetails = async (projectId: string) => {
+export const getProjectDetails = async (
+  projectId: string
+): Promise<ProjectDetails> => {
   const response = await apiClient.get(`${API_BASE_URL}/${projectId}`);
+  return response.data;
+};
+
+export const uploadDocuments = async (ukid: string, documents: File[]) => {
+  const formData = new FormData();
+  formData.append("ukid", ukid);
+  documents.forEach((document) => {
+    formData.append("documents", document);
+  });
+
+  const response = await apiClient.post(
+    `/api/v0/financial/financial-documents`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
   return response.data;
 };

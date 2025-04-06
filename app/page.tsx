@@ -7,11 +7,21 @@ import { ViewOptions } from "@/components/view-options";
 import { NewProjectModal } from "@/components/new-project-modal";
 import type { Project } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProjects } from "@/hooks/use-projects";
+import { useCreateProject, useProjects } from "@/hooks/use-projects";
 import { useEffect, useState } from "react";
 
 export default function Home() {
   const { data: fetchedProjects, isLoading } = useProjects();
+
+  const handleCreateProjectSuccess = (newProject: Project) => {
+    if (newProject?.id) {
+      router.push(`/project/${newProject.id}`);
+    }
+  };
+
+  const { mutate: handleCreateProject, isPending: isCreatingProject } =
+    useCreateProject(handleCreateProjectSuccess);
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -48,10 +58,6 @@ export default function Home() {
 
   const openNewProjectModal = () => {
     setIsNewProjectModalOpen(true);
-  };
-
-  const handleCreateProject = (name: string) => {
-    setIsNewProjectModalOpen(false);
   };
 
   const deleteProject = (id: string) => {
@@ -112,6 +118,7 @@ export default function Home() {
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
         onConfirm={handleCreateProject}
+        isLoading={isCreatingProject}
       />
     </FileManagerLayout>
   );

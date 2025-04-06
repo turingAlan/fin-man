@@ -7,4 +7,5 @@ export const mutationKeys = {
   createProject: "createProject",
   updateProject: (projectId: string) => ["updateProject", projectId],
   deleteProject: (projectId: string) => ["deleteProject", projectId],
+  createProjection: "createProjection",
 };

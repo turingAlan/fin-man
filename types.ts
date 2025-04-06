@@ -13,3 +13,17 @@ export interface ApiProjectData {
 }
 
 export type ApiProjectResponse = ApiProjectData[];
+
+export interface ProjectDetailFile {
+  id: string;
+  parent: string;
+  tags: string;
+  name: string;
+  item_type: "document" | "excel_f2" | "excel_f1" | "json";
+  file_path: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type ProjectDetails = { data: ProjectDetailFile[] };
